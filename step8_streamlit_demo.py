@@ -1,174 +1,94 @@
 """
-RAG Live Project — Step 8: Streamlit Chat Demo
+RAG Live Project — Agentic Streamlit Chat Demo
 =================================================
-WHAT WE'RE DOING: A live chat UI where you can talk to
-the RAG system and toggle between RAG and No-RAG mode
-to see the difference in real time.
+WHAT WE'RE DOING: A native ChatGPT-like interface seamlessly 
+powered by our LangGraph Agent.
 
 RUN: streamlit run step8_streamlit_demo.py
 """
 
 import os
-from pathlib import Path
 from dotenv import load_dotenv
 import streamlit as st
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_chroma import Chroma
-from langchain_groq import ChatGroq
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
+
+# Import our autonomous pipeline
+from rag_pipeline import create_rag_pipeline, create_agent
 
 load_dotenv()
 
 # ── Page config ──────────────────────────────────────────
 
-st.set_page_config(page_title="NovaTech Policy Assistant", page_icon="📋", layout="wide")
-st.title("📋 NovaTech Policy Assistant")
-st.caption("Ask questions about HR, IT, Finance & Compliance policies — powered by RAG")
+st.set_page_config(page_title="NovaTech Agentic Assistant", page_icon="📋", layout="wide")
+st.title("📋 NovaTech Agentic RAG Assistant")
+st.caption("Ask questions about HR, IT, Finance & Compliance policies — powered by an autonomous LangGraph Search Agent!")
 
 # ── Sidebar controls ────────────────────────────────────
 
 with st.sidebar:
-    st.header("Settings")
-    use_rag = st.toggle("Use RAG (Retrieval)", value=True)
-    if use_rag:
-        st.success("RAG ON — answers grounded in real policy documents")
-    else:
-        st.warning("RAG OFF — LLM answers from its own knowledge (may hallucinate)")
+    st.header("App Mode")
+    st.success("🤖 AGENT ONLINE — The model dynamically decides when to fetch facts from company policies!")
 
     st.divider()
-    st.markdown("**Sample questions:**")
+    st.markdown("**Sample queries reflecting agent reasoning:**")
     st.markdown("""
-**HR:**
-- How many days of earned leave do I get per year?
-- What is the notice period for a Band 5 employee?
-- What is the employee referral bonus for tech roles?
-
-**IT:**
-- What is the minimum password length?
-- How do I report a cybersecurity incident?
-- What is the laptop refresh cycle?
-
-**Finance:**
-- What is the daily hotel limit for Tier 1 cities?
-- What is the max client entertainment spend per person?
-
-**Try this (not in docs):**
-- What is NovaTech's cryptocurrency reimbursement policy?
+- What is the difference between IT policy and HR policy?
+- How many days of earned leave do I get?
+- Can I use a corporate card to buy a laptop if I break mine?
+- Explain the password sharing rule.
     """)
     st.divider()
-    st.caption("Step 8 — RAG Live Project")
+    st.caption("Step 8 — Agentic Streamlit Live Project")
 
-# ── Load models (cached so they load only once) ─────────
-
-@st.cache_resource
-def load_embedding_model():
-    return HuggingFaceEmbeddings(
-        model_name="all-MiniLM-L6-v2",
-        model_kwargs={"device": "cpu"},
-    )
+# ── Agent Loading ───────────────────────────────────────
 
 @st.cache_resource
-def load_vectorstore():
-    embedding_model = load_embedding_model()
-    return Chroma(
-        persist_directory="./chroma_db",
-        embedding_function=embedding_model,
-        collection_name="technova_policies",
-    )
+def load_application_agent():
+    # Only load chroma db and LLM wrapper once
+    _, vectorstore = create_rag_pipeline()
+    return create_agent(vectorstore)
 
-@st.cache_resource
-def load_llm():
-    return ChatGroq(model_name="llama-3.1-8b-instant", temperature=0.1)
-
-
-with st.spinner("Loading models (first time takes ~30 seconds)..."):
-    embedding_model = load_embedding_model()
-    vectorstore = load_vectorstore()
-    llm = load_llm()
-    retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
-
-# ── Prompt templates ─────────────────────────────────────
-
-rag_template = """You are a helpful policy assistant for NovaTech Solutions Pvt. Ltd.
-Answer the employee's question based ONLY on the provided context.
-If the context doesn't contain the answer, say "I don't have that information in our policy documents."
-
-CONTEXT:
-{context}
-
-QUESTION: {question}
-
-ANSWER:"""
-
-no_rag_template = """You are a helpful policy assistant for NovaTech Solutions Pvt. Ltd.
-Answer the employee's question about company policies.
-
-QUESTION: {question}
-
-ANSWER:"""
-
-rag_prompt = ChatPromptTemplate.from_template(rag_template)
-no_rag_prompt = ChatPromptTemplate.from_template(no_rag_template)
-
-def format_docs(docs):
-    return "\n\n".join(doc.page_content for doc in docs)
+with st.spinner("Initializing LangGraph Agent..."):
+    agent = load_application_agent()
 
 # ── Chat history ─────────────────────────────────────────
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display chat history
+# Re-render chat messages gracefully matching ChatGPT UI
 for msg in st.session_state.messages:
+    # We display standard roles natively ('user' or 'assistant')
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
-        if "sources" in msg:
-            with st.expander("📄 Sources used"):
-                st.markdown(msg["sources"])
 
-# ── Chat input ───────────────────────────────────────────
+# ── Interaction Runtime ─────────────────────────────────
 
-if question := st.chat_input("Ask a question about NovaTech policies..."):
-    # Show user message
+if question := st.chat_input("Ask a question about NovaTech operations..."):
+    # Render user command
     st.session_state.messages.append({"role": "user", "content": question})
     with st.chat_message("user"):
         st.markdown(question)
 
-    # Generate answer
+    # Process and Render Agent Output natively
     with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
-            if use_rag:
-                # Retrieve relevant chunks
-                docs = retriever.invoke(question)
-                context = format_docs(docs)
+        with st.spinner("Thinking & Searching..."):
+            
+            # Map native Streamlit dictionary to LangGraph compliant tuple pairs
+            langgraph_messages = [
+                (m["role"], m["content"]) for m in st.session_state.messages
+            ]
 
-                chain = rag_prompt | llm | StrOutputParser()
-                answer = chain.invoke({"context": context, "question": question})
+            try:
+                # Hand conversation over to the Agent 
+                # (Notice we no longer manually `retriever.invoke`, the agent does it!)
+                result = agent.invoke({"messages": langgraph_messages})
+                
+                # Fetch final synthesized answer
+                answer = result["messages"][-1].content
+            except Exception as e:
+                answer = f"⚠️ Agent crashed: {e}"
 
-                # Build source info
-                sources_list = []
-                for i, doc in enumerate(docs, 1):
-                    source_name = Path(doc.metadata["source"]).name
-                    preview = doc.page_content[:150].replace("\n", " ")
-                    sources_list.append(f"**{i}. {source_name}**\n> {preview}...")
+        st.markdown(answer)
 
-                sources_text = "\n\n".join(sources_list)
-            else:
-                chain = no_rag_prompt | llm | StrOutputParser()
-                answer = chain.invoke({"question": question})
-                sources_text = None
-
-        # Display answer
-        mode_tag = "🟢 RAG" if use_rag else "🔴 No RAG"
-        st.markdown(f"*{mode_tag}*\n\n{answer}")
-
-        if sources_text:
-            with st.expander("📄 Sources used"):
-                st.markdown(sources_text)
-
-    # Save to history
-    msg_data = {"role": "assistant", "content": f"*{mode_tag}*\n\n{answer}"}
-    if sources_text:
-        msg_data["sources"] = sources_text
-    st.session_state.messages.append(msg_data)
+    # Attach response to chat history
+    st.session_state.messages.append({"role": "assistant", "content": answer})

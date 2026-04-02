@@ -118,6 +118,44 @@ def query_rag(question: str):
     chain = get_rag_chain()
     return chain.invoke(question)
 
+def create_rag_pipeline():
+    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2", model_kwargs={"device": "cpu"})
+    vectorstore = Chroma(persist_directory=PERSIST_DIR, embedding_function=embeddings, collection_name=COLLECTION_NAME)
+    qa_chain = get_rag_chain()
+    return qa_chain, vectorstore
+
+from pydantic import BaseModel, Field
+from langchain_core.tools import tool
+
+class DocumentSearchInput(BaseModel):
+    query: str = Field(description="The search query to look up in the documents.")
+
+def get_retriever_tool(vectorstore):
+    retriever = vectorstore.as_retriever()
+    
+    @tool("document_search", args_schema=DocumentSearchInput)
+    def document_search(query: str) -> str:
+        """Search NovaTech company documents for policies, IT security, and HR rules."""
+        docs = retriever.invoke(query)
+        return "\n\n".join([doc.page_content for doc in docs])
+        
+    return document_search
+
+from langgraph.prebuilt import create_react_agent
+from langchain_groq import ChatGroq
+
+def create_agent(vectorstore):
+    tool = get_retriever_tool(vectorstore)
+    llm = ChatGroq(model_name="llama-3.1-8b-instant", temperature=0)
+    
+    system_prompt = (
+        "You are a helpful NovaTech assistant. Answer user queries by searching the company documents. "
+        "ALWAYS read the content of the retrieved documents and synthesize a detailed answer. "
+        "Never just say 'I searched the documents', actually provide the information you found."
+    )
+    agent = create_react_agent(llm, tools=[tool], prompt=system_prompt)
+    return agent
+
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--build":
         # Run: python rag_pipeline.py --build

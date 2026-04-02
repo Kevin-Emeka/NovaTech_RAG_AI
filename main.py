@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+from rag_pipeline import create_rag_pipeline, create_agent
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langchain_openai import ChatOpenAI
@@ -95,5 +96,31 @@ ANSWER:"""
         except Exception as e:
             print(f"\n❌ Error: {e}")
 
+def main():
+    print("🚀 NovaTech Agentic RAG Started\n")
+
+    qa, vectorstore = create_rag_pipeline()  # modify to return vectorstore
+    agent = create_agent(vectorstore)
+
+    while True:
+        try:
+            query = input("\nAsk: ")
+
+            if query.lower().strip() in ["exit", "quit"]:
+                break
+
+            if not query.strip():
+                continue
+
+            result = agent.invoke({"messages": [("user", query)]})
+            # langgraph agent returns a dict with 'messages', we take the last message's content
+            response = result["messages"][-1].content
+            print("\n🤖", response)
+        except KeyboardInterrupt:
+            print("\n👋 Goodbye!")
+            break
+        except Exception as e:
+            print(f"\n❌ Error: {e}")
+
 if __name__ == "__main__":
-    run_rag_app()
+    main()
