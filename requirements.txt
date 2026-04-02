@@ -1,0 +1,42 @@
+# =============================================================
+# RAG Hands-On Session - Environment Setup
+# Full Stack Gen AI & Agentic AI Course | Day 4: RAG
+# =============================================================
+# Install: pip install -r requirements.txt
+# Python version: 3.10 or 3.11 recommended
+# =============================================================
+
+# --- Core RAG Framework ---
+langchain>=0.3.0
+langchain-community>=0.3.0
+langchain-core>=0.3.0
+
+# --- Document Loaders ---
+docx2txt>=0.8                 # Word (.docx) document loading
+
+# --- Text Splitting ---
+langchain-text-splitters>=0.3.0
+
+# --- Embedding Models ---
+sentence-transformers>=3.0.0  # FREE local embeddings (all-MiniLM-L6-v2)
+
+# --- Vector Store ---
+chromadb>=0.5.0               # Local vector database (no server needed)
+
+# --- LLM Provider ---
+openai>=1.40.0                # OpenAI GPT-4o-mini
+
+# --- LangChain Integration Packages ---
+langchain-openai>=0.2.0       # LangChain <-> OpenAI integration
+langchain-chroma>=0.1.0       # LangChain <-> ChromaDB integration
+
+# --- Utilities ---
+python-dotenv>=1.0.0          # .env file for API keys
+numpy>=1.26.0                 # Cosine similarity calculations
+
+# --- Streamlit (Step 8 demo UI) ---
+streamlit>=1.30.0             # Chat UI for the RAG demo
+
+# --- Evaluation System ---
+ragas>=0.1.9                  # Framework for evaluating RAG
+datasets>=2.16.0              # Required by Ragas for dataset formats

@@ -1,0 +1,2 @@
+# Product Documentation
+NovaTech's flagship product is the Enterprise Assistant Platform. It allows companies to index internal documents using an advanced Retrieval-Augmented Generation (RAG) system. It features sub-second query latency and integrates natively with ChromaDB.

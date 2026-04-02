@@ -1,0 +1,6 @@
+# FAQ
+Q: How do I access my paystubs?
+A: You can view them in the Workday portal under "My Pay".
+
+Q: Where can I submit IT requests?
+A: Use the Jira service desk portal available on the intranet home page.

@@ -1,0 +1,2 @@
+# IT Security Policy
+Passwords must be at least 14 characters long and changed every 90 days. All electronic devices must use full-disk encryption. If you lose your laptop, report it to the IT helpdesk within 2 hours. Do not share your 2FA codes.
