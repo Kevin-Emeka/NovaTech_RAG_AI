@@ -14,13 +14,11 @@ from fastapi.responses import FileResponse
 
 app = FastAPI(title="NovaTech Assistant API")
 
+# Disable index serving here so it doesn't block API routes
 # Serve the index.html on the root URL
 @app.get("/")
 def serve_index():
     return FileResponse("frontend/index.html")
-
-# Mount static files (CSS, JS)
-app.mount("/", StaticFiles(directory="frontend"), name="frontend")
 
 # Enable CORS for frontend requests
 app.add_middleware(
@@ -43,7 +41,13 @@ chain = None
 @app.on_event("startup")
 def load_model():
     global chain
+    import os
+    from rag_pipeline import build_vector_store
     try:
+        if not os.path.exists("./chroma_db") or not os.listdir("./chroma_db"):
+            logging.info("Vector store not found. Building from docs...")
+            build_vector_store()
+            
         logging.info("Initializing RAG chain...")
         chain = get_rag_chain()
         logging.info("RAG chain initialized successfully.")
@@ -73,3 +77,6 @@ async def chat_endpoint(request: ChatRequest):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)
+
+# Important: Mount static files LAST so it doesn't block /api/ routes!
+app.mount("/", StaticFiles(directory="frontend"), name="frontend")
