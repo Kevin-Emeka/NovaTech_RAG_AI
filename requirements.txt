@@ -40,3 +40,8 @@ streamlit>=1.30.0             # Chat UI for the RAG demo
 # --- Evaluation System ---
 ragas>=0.1.9                  # Framework for evaluating RAG
 datasets>=2.16.0              # Required by Ragas for dataset formats
+
+# --- API and Web Backend ---
+fastapi>=0.100.0              # Backend Web Framework
+uvicorn>=0.23.0               # ASGI Server for FastAPI
+langchain-groq>=0.1.0         # Groq LLM integration
