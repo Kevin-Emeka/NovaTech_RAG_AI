@@ -9,7 +9,18 @@ except Exception as e:
     logging.error(f"Failed to import rag_pipeline: {e}")
     # Will fail securely later if queried when setup is broken
 
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
 app = FastAPI(title="NovaTech Assistant API")
+
+# Serve the index.html on the root URL
+@app.get("/")
+def serve_index():
+    return FileResponse("frontend/index.html")
+
+# Mount static files (CSS, JS)
+app.mount("/", StaticFiles(directory="frontend"), name="frontend")
 
 # Enable CORS for frontend requests
 app.add_middleware(
